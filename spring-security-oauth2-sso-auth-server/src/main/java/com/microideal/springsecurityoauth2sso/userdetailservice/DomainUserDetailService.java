@@ -1,0 +1,19 @@
+package com.microideal.springsecurityoauth2sso.userdetailservice;
+
+import com.microideal.springsecurityoauth2sso.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+
+public class DomainUserDetailService implements UserDetailsService {
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Override
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        com.microideal.springsecurityoauth2sso.domain.User user = userRepository.findByUsername(username);
+        return user;
+    }
+}

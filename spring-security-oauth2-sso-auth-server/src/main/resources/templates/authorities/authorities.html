@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <!--防止跨站请求伪造-->
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+    <link rel="stylesheet" th:href="@{/css/bootstrap.min.css}" />
+    <link rel="stylesheet" th:href="@{/css/jquery.dataTables.min.css}" />
+    <link rel="stylesheet" th:href="@{/css/matrix-style.css}" />
+    <link rel="stylesheet" th:href="@{/css/matrix-media.css}" />
+    <link th:href="@{/font-awesome/css/font-awesome.css}" rel="stylesheet" />
+    <title>资源管理</title>
+</head>
+<body>
+
+<!--Header-part-->
+<div id="header">
+    <h1><a href="dashboard.html">Spring Security</a></h1>
+</div>
+<!--close-Header-part-->
+
+<!--top-Header-menu-->
+<!--<div th:include="common/top :: top"></div>-->
+<div th:include="common/menu :: menu"></div>
+
+<div id="content">
+    <div id="content-header">
+        <div id="breadcrumb"> <a href="#" title="Go to Home" class="tip-bottom"><i class="icon-home"></i> Home</a> <a href="#" class="current">Tables</a> </div>
+    </div>
+    <div class="container-fluid">
+        <hr>
+        <div class="row-fluid">
+            <div class="span12">
+
+                <div class="widget-box">
+                    <div class="widget-title"> <span class="icon"><i class="icon-th"></i></span>
+                        <h5>资源列表</h5>
+                    </div>
+                    <form class="form-inline">
+                        <div class="form-group">
+                            <label >编号:</label>
+                            <input type="text" class="form-control" id="id-search" placeholder="编号"/>
+                        </div>
+                        <div class="form-group">
+                            <label >名称:</label>
+                            <input type="text" class="form-control" id="name-search" placeholder="名称"/>
+                        </div>
+                        <button type="button"  onclick="search();" class="btn btn-primary">查询</button>
+                        <button type="button" th:if="${#authorization.expression('hasAuthority(''/authorities/delete'')')}" onclick="delById();" class="btn btn-info" style="float: right; margin-right: 1px;">删除</button>
+                        <button type="button" th:if="${#authorization.expression('hasAuthority(''/authorities/add'')')}" onclick="$('#resourcesModal').modal();" class="btn btn-info" style="float: right; margin-right: 1px;">新增</button>
+                    </form>
+                    <table class="table table-bordered data-table" id="datatable" >
+                        <thead>
+                        <tr>
+                            <th>
+                                <input type="checkbox" class="checkall" />
+                            </th>
+                            <th>ID</th>
+                            <th>资源名称</th>
+                            <th>父资源</th>
+                            <th>资源链接</th>
+                            <th>资源类型</th>
+                            <th>排序</th>
+                        </tr>
+                        </thead>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+
+<!--弹框-->
+<div class="modal fade bs-example-modal-sm"  id="selectResources" tabindex="-1" role="dialog" aria-labelledby="selectRoleLabel">
+    <div class="modal-dialog modal-sm" role="document" style="height: 600px; "  >
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="selectRoleLabel">分配权限</h4>
+            </div>
+            <div class="modal-body">
+                <form id="boxRoleForm" >
+                    <ul id="treeDemo" class="ztree"></ul>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                <button type="button" onclick="saveRoleResources();" class="btn btn-primary">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+<!--弹框-->
+
+
+<!--添加弹框-->
+<div class="modal fade" id="resourcesModal" tabindex="-1" role="dialog" aria-labelledby="addroleLabel">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="addroleLabel">添加资源</h4>
+            </div>
+            <div class="modal-body">
+                <form id="resourcesForm">
+                    <div class="form-group">
+                        <label  class="control-label">资源名称:</label>
+                        <input type="text" class="form-control" name="name" id="name" placeholder="请输入资源名称"/>
+                    </div>
+                    <div class="form-group">
+                        <label  class="control-label">父资源ID:</label>
+                        <input type="text" class="form-control" id="parentId" name="parentId"  placeholder="请输入父资源ID">
+                    </div>
+                    <div class="form-group">
+                        <label  class="control-label">资源链接:</label>
+                        <input type="text" class="form-control" id="resUrl" name="resurl"  placeholder="请输入资源链接">
+                    </div>
+                    <div class="form-group">
+                        <label  class="control-label">资源类型:</label>
+                        <select class="form-control" name="type" id="type" >
+                            <option value="0">一级菜单</option>
+                            <option value="1">二级菜单</option>
+                            <option value="2">按钮</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="control-label">排序:</label>
+                        <input type="text" class="form-control" id="sort" name="sort"  placeholder="请输入排序">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                <button type="button" onclick="addResources();" class="btn btn-primary">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+<!--/添加弹框-->
+
+
+<!--end-Footer-part-->
+<script type="text/javascript" th:src="@{/js/jquery-1.11.2.min.js}"></script>
+<script th:src="@{/js/bootstrap.min.js}" th:sr></script>
+<script th:src="@{/js/jquery.dataTables.min.js}"></script>
+<script th:src="@{/js/layer.js}"></script>
+<script type="text/javascript">
+    var table;
+    $(".checkall").click(function () {
+        var check = $(this).prop("checked");
+        $(".checkchild").prop("checked", check);
+    });
+    $(document).ready(function() {
+        table = $('#datatable').DataTable( {
+            "dom": '<"top"i>rt<"bottom"flp><"clear">',
+            "searching" : false,
+            "bJQueryUI": true,
+            "sPaginationType": "full_numbers",
+            "serverSide": true,//开启服务器模式，使用服务器端处理配置datatable
+            "processing": true,//开启读取服务器数据时显示正在加载中……特别是大数据量的时候，开启此功能比较好
+
+            ajax : function(data, callback, settings) {
+                //封装请求参数
+                var param = getQueryCondition(data);
+                //alert(JSON.stringify(param));
+                $.ajax({
+                    type: "GET",
+                    url: 'authorities/query',
+                    cache : false,  //禁用缓存
+                    data: param,    //传入已封装的参数
+                    dataType: "json",
+                    success: function(result) {
+                        //封装返回数据  如果参数相同，可以直接返回result ，此处作为学习，先这么写了。
+                        var returnData = {};
+                        returnData.draw = data.draw;//这里直接自行返回了draw计数器,应该由后台返回
+                        returnData.recordsTotal = result.data.totalElements;//总记录数
+                        returnData.recordsFiltered = result.data.totalElements;//后台不实现过滤功能，每次查询均视作全部结果
+                        returnData.data = result.data.content;
+                        //调用DataTables提供的callback方法，代表数据已封装完成并传回DataTables进行渲染
+                        //此时的数据需确保正确无误，异常判断应在执行此回调前自行处理完毕
+                        callback(returnData);
+                    },
+                    error: function(XMLHttpRequest, textStatus, errorThrown) {
+                        alert("查询失败");
+                    }
+                });
+            },
+            "columns": [
+                {
+                    "sClass": "text-center",
+                    "data": "id",
+                    "render": function (data, type, full, meta) {
+                        return '<input type="checkbox"  class="checkchild"  value="' + data + '" />';
+                    },
+                    "bSortable": false
+                },
+                { "data": "id" },
+                { "data": "name" },
+                { "data": "parentId" },
+                { "data": "value" },
+                { "data": "type" },
+                { "data": "sort" },
+            ],
+            columnDefs:[
+                { "orderable": false, "targets": 1 },
+                { "orderable": false, "targets": 2 },
+                { "orderable": false, "targets": 3 },
+                { "orderable": false, "targets": 4 },
+                {
+                    "orderable": false,
+                    "render": function(data, type, row) {
+                        if(data==1){
+                            return "二级菜单";
+                        }else if(data==2){
+                            return "按钮";
+                        }else if(data==0){
+                            return "一级菜单";
+                        }else{
+                            return "其他";
+                        }
+                    },
+                    "targets": 5
+                },
+                { "orderable": false, "targets": 6 }
+            ],
+
+        } );
+
+
+
+    } );
+
+    function search(){
+        table.ajax.reload();
+    }
+
+    //封装查询参数
+    function getQueryCondition(data){
+        var param = {};
+        //组装排序参数
+        param.id = $("#id-search").val();//查询条件
+        param.name = $("#name-search").val();//查询条件
+        //组装分页参数
+        param.page = data.start/data.length;
+        //var isAnonymous = [[${#authorization.expression('hasAuthority(''/users/add'')')}]];
+        //alert(data.start);
+        //alert(isAnonymous);
+        param.size = data.length;
+        param.draw = data.draw;
+        return param;
+    }
+
+    //添加用户
+    function addResources() {
+        var name = $("#name").val();
+        var parentId = $("#parentId").val();
+        var resUrl = $("#resUrl").val();
+        var sort = $("#sort").val();
+        var  type = $("#type option:selected").val();
+        if(name == "" || name == undefined || name == null){
+            return layer.msg('权限名称不能为空', function(){
+                //关闭后的操作
+            });
+        }
+        if(parentId == "" || parentId == undefined || parentId == null){
+            return layer.msg('父权限id不能为空', function(){
+                //关闭后的操作
+            });
+        }
+        if(resUrl == "" || resUrl == undefined || resUrl == null){
+            return layer.msg('权限链接不能为空', function(){
+                //关闭后的操作
+            });
+        }
+        if(sort == "" || sort == undefined || sort == null){
+            return layer.msg('权限排序不能为空', function(){
+                //关闭后的操作
+            });
+        }
+        var params = {name:name,value:resUrl,type:type,parentId:parentId,sort:sort};
+        //alert(JSON.stringify(params));
+        //防止跨站请求伪造
+        var token = $("meta[name='_csrf']").attr("content");
+        var header = $("meta[name='_csrf_header']").attr("content");
+        $(document).ajaxSend(function(e, xhr, options) {
+            xhr.setRequestHeader(header, token);
+        });
+        $.ajax({
+            cache: true,
+            headers: {'Content-Type': 'application/json'},
+            type: "POST",
+            url:'authorities/add',
+            //data:$('#resourcesForm').serialize(),// 你的formid
+            data: JSON.stringify(params),
+            async: false,
+            success: function(result) {
+                if(result.status=="SUCCESS"){
+                    layer.msg('保存成功');
+                    table.ajax.reload();
+                    $('#resourcesModal').modal('hide');
+                }else if(result.status=="FAILURE"){
+                    layer.msg(result.error);
+                }else{
+                    layer.msg('保存失败');
+                    $('#resourcesModal').modal('hide');
+                }
+            }
+        });
+    }
+
+    function delById() {
+        var id = $(".checkchild:checked").val();
+        if ($(".checkchild:checked").length < 1)
+        {
+            layer.msg('请选择一条数据');
+            return;
+        }
+        if ($(".checkchild:checked").length > 1)
+        {
+            layer.msg('一次只能修改一条数据');
+            return;
+        }
+        layer.confirm('您确定要删除该资源吗？', {
+            btn: ['确认','取消'] //按钮
+        }, function(){
+            //防止跨站请求伪造
+            var token = $("meta[name='_csrf']").attr("content");
+            var header = $("meta[name='_csrf_header']").attr("content");
+            $(document).ajaxSend(function(e, xhr, options) {
+                xhr.setRequestHeader(header, token);
+            });
+            $.ajax({
+                cache: true,
+                type: "DELETE",
+                url:'authorities/' + id,
+                //data:{id:id},
+                async: false,
+                success: function(result) {
+                    if(result.status=="SUCCESS"){
+                        layer.msg('删除成功');
+                        table.ajax.reload();
+                    }else if(result.status=="FAILURE"){
+                        layer.msg(result.error);
+                    }else{
+                        layer.msg('删除失败');
+                    }
+                }
+            });
+        });
+
+    }
+
+
+</script>
+
+</body>
+</html>

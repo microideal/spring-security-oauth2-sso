@@ -1,0 +1,20 @@
+server:
+  port: 8081
+  servlet:
+    session:
+      cookie:
+        name: SESSIONMEMBER
+
+security:
+  oauth2:
+    client:
+      client-id: MemberSystem
+      client-secret: MemberSystem
+      access-token-uri: http://localhost:8080/oauth/token
+      user-authorization-uri: http://localhost:8080/oauth/authorize
+    resource:
+      user-info-uri: http://localhost:8080/user
+
+spring:
+  thymeleaf:
+    cache: false
